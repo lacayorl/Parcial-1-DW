@@ -1,0 +1,155 @@
+---
+title: "dw-2020-parcial-1"
+author: "Roberto Lacayo"
+
+---
+
+# Examen parcial
+
+Indicaciones generales:
+
+* Usted tiene el período de la clase para resolver el examen parcial.
+* La entrega del parcial, al igual que las tareas, es por medio de su cuenta de github, pegando el link en el portal de MiU.
+
+
+* Pueden hacer uso del material del curso e internet (stackoverflow, etc.). Sin embargo, si encontramos algún indicio de copia, se anulará el exámen para los estudiantes involucrados. Por lo tanto, aconsejamos no compartir las agregaciones que generen. 
+
+## Sección I: Preguntas teóricas.
+
+* Existen 10 preguntas directas en este Rmarkdown, de las cuales usted deberá responder 5. Las 5 a responder estarán determinadas por un muestreo aleatorio basado en su número de carné.
+
+* Ingrese su número de carné en  `set.seed()` y corra el chunk de R para determinar cuáles preguntas debe responder.
+
+
+```{r, echo=TRUE, cache=TRUE}
+
+set.seed(20190019) 
+v<- 1:10
+preguntas <-sort(sample(v, size = 6, replace = FALSE ))
+
+paste0("Mis preguntas a resolver son: ",paste0(preguntas,collapse = ", "))
+
+```
+### Preguntas a resolver: 1, 2, 3, 7, 9, 10
+
+### Listado de preguntas teóricas
+
+1. Para las siguientes sentencias de `base R`, liste su contraparte de `dplyr`:
+    * `str()`
+    * `df[,c("a","b")]`
+    * `names(df)[4] <- "new_name"` donde la posición 4 corresponde a la variable `old_name`
+    * `df[df$variable == "valor",]`
+    
+2. Al momento de filtrar en SQL, ¿cuál keyword cumple las mismas funciones que el keyword `OR`  para filtrar uno o más elementos una misma columna?
+3. ¿Por qué en R utilizamos funciones de la familia apply (lapply,vapply) en lugar de utilizar ciclos?
+4. ¿Cuál es la diferencia entre utilizar `==` y `=` en R?
+5. ¿Cuál es la forma correcta de cargar un archivo de texto donde el delimitador es `:`?
+6. ¿Qué es un vector y en qué se diferencia en una lista en R?
+7. ¿Qué pasa si quiero agregar una nueva categoría a un factor que no se encuentra en los niveles existentes?
+8. Si en un dataframe, a una variable de tipo `factor` le agrego un nuevo elemento que *no se encuentra en los niveles existentes*, ¿cuál sería el resultado esperado y por qué?
+    * El nuevo elemento
+    * `NA`
+9. En SQL, ¿para qué utilizamos el keyword `HAVING`?
+10. Si quiero obtener como resultado las filas de la tabla A que no se encuentran en la tabla B, ¿cómo debería de completar la siguiente sentencia de SQL?
+
+    * SELECT * FROM A _______ B ON A.KEY = B.KEY WHERE __________ = __________
+  
+Extra: ¿Cuántos posibles exámenes de 5 preguntas se pueden realizar utilizando como banco las diez acá presentadas?
+(responder con código de R.)
+
+### Respuestas a las preguntas
+
+1. Las funciones del paquete dplyr como alternativa para las de R base son:
+    * `glimpse()`
+    * `select(df, A, B)`
+    * `rename(df, old_name = new_name)`
+    * `filter(df, variable = "valor")`
+
+2. Al momento de filtrar en mysql uno o más elementos de una columna es la keyword `in`
+
+3. Con la familia apply no es necesario usar ciclos porque las funciones dentro de esta familia
+trabajan por default sobre cada elemento de la estructura.
+
+7. Me da un NA en la categoría que no existe, pero puedo utiliar la función `levels()` para agregarla
+
+9. La keyword `HAVING` se utiliza para incluir condiciones con funciones de mysql como
+`MAX` `MIN` `SUM`, ya que `WHERE` no las puede usar.
+
+10. El query para obtener las filas de una tabla que no estan en otra tabla es:
+    * SELECT * FROM A LEFT OUTER JOIN B ON A.KEY = B.KEY WHERE A.Column <> B.Column
+
+EXTRA
+
+```{r, echo=FALSE}
+library(gtools)
+Examenes <- combinations(10,5)
+```
+
+Se puede obtener 252 examenes diferentes.
+
+
+## Sección II Preguntas prácticas.
+
+
+* Conteste las siguientes preguntas utilizando sus conocimientos de R. Adjunte el código que utilizó para llegar a sus conclusiones en un chunk del markdown.
+
+A. De los clientes que están en más de un país,¿cuál cree que es el más rentable y por qué?
+
+B. Estrategia de negocio ha decidido que ya no operará en aquellos territorios cuyas pérdidas sean "considerables". Bajo su criterio, ¿cuáles son estos territorios y por qué ya no debemos operar ahí?
+
+```{r, include=FALSE}
+parcial_anonimo <- readRDS("~/GitHub/Parcial 1 DW Roberto Lacayo/parcial_anonimo.rds")
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+```
+
+
+### Respuestas a las preguntas prácticas
+
+## A
+
+```{r}
+###resuelva acá
+parcial_anonimo$Year <- year(parcial_anonimo$DATE)
+Clientes_rentables <- parcial_anonimo %>% 
+  group_by(Cliente, Year) %>%
+  summarise(Paises = n_distinct(Pais),
+            Unidades = sum(`Unidades plaza`),
+            Utilidad = sum(Venta)) %>% 
+  filter(Paises >= 2)
+Clientes_rentables <- arrange(Clientes_rentables,-Utilidad)
+Clientes_rentables
+```
+
+Como podemos notar estos 7 cleintes son los que están en más de 1 país, pero solo 6 se encuentran activos, nuestros clientes más rentables serian el top 3 que es conformado por `a17a7558` `ff122c3f` `c53868a0` a lo largo de los 3 años y si analizamos las unidades que vendemos y su rendimiento veremos que tambien estos son los mayor retorno otorgan por unidad, aunque existe una gran cantidad de unidades que devuelven, lo que genera perdida para nosotros.
+
+```{r}
+gg1 <- ggplot(Clientes_rentables,aes(x = Year, y = Utilidad, fill = Cliente))+
+  geom_bar(stat = 'identity')
+gg1_plotly <- plotly::ggplotly(gg1)
+gg1_plotly
+```
+
+## B
+
+```{r }
+###resuelva acá
+
+Territorio <- parcial_anonimo %>% 
+  group_by(Territorio, Cliente) %>%
+  summarise(Venta = sum(Venta)) %>% 
+  filter(Venta <= -1)
+
+
+```
+
+Podemos Notar que estos 15 territorios representan perdidas para la empresa, por lo que deberiamos dejarlos.
+
+```{r}
+library(ggplot2)
+gg2 <- ggplot(Territorio,aes(Venta, fill = Territorio))+
+  geom_bar()
+gg2_plotly <- plotly::ggplotly(gg2)
+gg2_plotly
+```
